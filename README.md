@@ -85,3 +85,172 @@ formState안에 errors 객체가 있는데 해당 객체 안에 에러들이 같
 위와같이 에러 메시지 등에 접근이 가능하다.
 
 > 모드에 따라서 언제 form의 validation을 할 지 정해지는데 기본값이 onSubmit이기 때문에 폼을 제출 할 때 error가 생긴다.
+
+## DefaultValue
+
+기본적으로 input의 value는 defaultValue로 설정이 가능하다.
+
+```ts
+const form = useForm<FormValues>({
+  defaultValues: {
+    username: "",
+    email: "",
+    channel: "",
+  },
+});
+```
+
+위와 같이 default value를 줄 수 있고, 강의 예시에서는 async 함수를 넣어서 비동기식으로도 기본값을 넣어준다.
+
+기본값이 왜 중요하냐면 **값은 넣은 상태로 Touched와 Dirty 상태를 false로 만들 수 있다**.  
+input중에 무엇하나라도 값이 달라진다면(제공되는 기본값과 다르다면) dirty가 true가 된다.
+
+```ts
+const { register, control, handleSubmit, formState, reset } = form;
+const { errors, isDirty } = formState;
+
+<button disabled={!isDirty}>Submit</button>;
+```
+
+위의 isDirty 상태로 버튼을 활성화/비활성화 시킬 수 있음.
+
+> 리셋에서도 디폴트 값을 전달할 수 있는데 그러면 디폴트 값을 넣은 채 상태(Touched, Dirty)가 다 false가 되서 사용자 정보 변경 등에 사용하기 좋음. 만약 리셋 때 디폴트 값을 넣지 않으면 폼을 맨 처음 형성할 때 썼던 디폴트 값으로 전달됨
+
+## 중첩 객체 및 배열과 register 연결하기
+
+기본적으로 form value는 객체랑 연결될 것이다.  
+중첩된 객체 및 배열과는 어떻게 연결할까 ?
+
+```ts
+type FormValues = {
+  social: {
+    twitter: string;
+    facebook: string;
+  };
+  phoneNumbers: string[];
+};
+
+const form = useForm<FormValues>({
+  defaultValues: {
+    social: {
+      twitter: "",
+      facebook: "",
+    },
+    phoneNumbers: ["", ""],
+  },
+});
+```
+
+위와 같은 타입이 있고, 기본값으로 social 객체와 phoneNumbers 배열을 전달했다.
+
+```ts
+<>
+  <label htmlFor="facebook">Facebook</label>
+  <input type="text" id="facebook" {...register("social.facebook")} />
+
+  <div className="form-control">
+    <label htmlFor="primary-phone">Primary phone number</label>
+    <input type="text" id="primary-phone" {...register("phoneNumbers.0")} />
+  </div>
+</>
+```
+
+위의 형태처럼 register를 등록해주면 된다. \[\]을 사용하지 말고 . 으로 연결시켜야 한다.
+
+## 동적으로 field 추가하기
+
+폼에 계속해서 정보가 추가된다든 지 할 때 사용하면 유용하다.  
+예를 들어 담당자를 계속 추가해야하는 상황 등에서 사용하면 될듯하다.
+
+```ts
+import { useForm, useFieldArray } from "react-hook-form";
+
+type FormValues = {
+  phNumbers: {
+    number: string;
+  }[];
+};
+```
+
+사용할 useForm과 useFieldArray를 불러오고, 폼의 타입을 위와 같이 설정한다.(phNumbers는 number key값을 가지고 있는 배열이다.)
+
+```ts
+const form = useForm<FormValues>({
+  defaultValues: {
+    phNumbers: [{ number: "" }],
+  },
+});
+
+const { register, control } = form;
+```
+
+이렇게 defaultValues를 설정해줬다.
+
+그리고 **나머지 컨트롤을 useFieldArray을 통해서** 하면된다.
+
+```ts
+const { fields, append, remove } = useFieldArray({
+  name: "phNumbers",
+  control,
+});
+```
+
+우선 배열을 그리는 것부터 fields를 map해서 그린다.
+
+```ts
+<div>
+  <label>List of phone numbers</label>
+  <div>
+    {fields.map((field, index) => (
+      <div className="form-control" key={field.id}>
+        <input type="text" {...register(`phNumbers.${index}.number`)} />
+        {index > 0 && (
+          <button type="button" onClick={() => remove(index)}>
+            Remove
+          </button>
+        )}
+      </div>
+    ))}
+    <button type="button" onClick={() => append({ number: "" })}>
+      Add phone number
+    </button>
+  </div>
+</div>
+```
+
+> id 부분이 헷갈릴 수 있는데 fields를 찍어보면 훅폼에서 자동적으로 겹치치 않게 id를 만들어 준다. 그래서 map을 사용할 때 key 값으로 id를 사용한다.
+
+> 리스트에 더하거나 뺄 때는 useFieldArray에서 append나 remove를 가지고 와서 사용한다.
+
+## watch
+
+watch를 사용하면 값을 실시간으로 확인하고, 리렌더링을 일으킬 수도 있다.
+
+```
+watch("username");
+string | Watch input value by name (similar to lodash get function)
+
+watch(["username", "email"]);
+string[] |	Watch multiple inputs
+
+watch()
+undefined |	Watch all inputs;
+
+watch
+(data: unknown, { name: string, type: string }) => void	| Watch all inputs and invoke a callback
+```
+
+중요한건 useEffect에서 watch를 사용하고 인수로 함수를 전달하면 리렌더링이 일어나지 않고 사이드 이펙트를 일으킬 수 있다.
+
+```ts
+useEffect(() => {
+  const subscription = watch((value, { name, type }) =>
+    console.log(value, name, type)
+  );
+  return () => subscription.unsubscribe();
+}, [watch]);
+```
+
+콘솔에 값은 {username: 'r', email: ''} 'username' 'change' 로 오는데 value에는 전체값, name에는 어디서 변경되었는 지(인풋 네임), type 변경 타입이 들어오는 것 같다.
+
+> useEffect에서 사용했으면 클린업 함수를 꼭 넣어주자
