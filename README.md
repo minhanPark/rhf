@@ -254,3 +254,17 @@ useEffect(() => {
 콘솔에 값은 {username: 'r', email: ''} 'username' 'change' 로 오는데 value에는 전체값, name에는 어디서 변경되었는 지(인풋 네임), type 변경 타입이 들어오는 것 같다.
 
 > useEffect에서 사용했으면 클린업 함수를 꼭 넣어주자
+
+## serValue
+
+값을 바꿀 때 사용하는 것이 setValue이다.
+
+> 기본적으로 값을 바꾸더라고 상태값이 바뀌진 않아서 해당 부분이 대한 검증이 들어가야할 때는 옵션을 줘야한다.
+
+```ts
+setValue("username", "bill", {
+  shouldValidate: true,
+  shouldDirty: true,
+  shouldTouch: true,
+});
+```
