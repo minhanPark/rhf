@@ -268,3 +268,75 @@ setValue("username", "bill", {
   shouldTouch: true,
 });
 ```
+
+## disabled 처리
+
+rhf에서도 disabled 처리를 할 수 있다.
+
+```ts
+<input
+  type="text"
+  id="twitter"
+  {...register("social.twitter", {
+    required: "Enter",
+    disabled: true,
+  })}
+/>
+```
+
+그냥 input에 넣는거랑 무슨 차이일까?  
+만약 개발자 도구를 열고 해당 인풋창에 disabled 속성을 지운다음에 글을 쓰고 제출해도 해당 값은 undefined로 올 것이다. 인풋창에 바로 넣었다면 값이 변해서 갔을거지만..
+
+```ts
+watch("channel") === "" 같은 watch 조건식을 disabled에 전달해주면 조건에 따라 disabled를 사용할 수 있다.
+```
+
+## submission 에러 다루기
+
+handleSubmit에는 두가지 함수가 들어가는데 하나는 onSubmit, 하나는 onError이다.
+submission에 실패했을 때 onError가 실행된다.
+
+```ts
+import { useForm, useFieldArray, FieldErrors } from "react-hook-form";
+
+const onError = (errors: FieldErrors<FormValues>) => {
+  console.log("Form errors", errors);
+};
+
+<form onSubmit={handleSubmit(onSubmit, onError)}></form>;
+```
+
+리액트 훔폼에서 FieldErrors를 갖고와서 제너릭으로 FormValues(폼 기본 타입)를 전달해주면 된다.
+
+## mode
+
+rhf은 기본적으로 제출을 했을 때 validation이 실행된다. 기본옵션인 onSubmit으로 되어 있어서인데 이걸 다른 것들로 바꿀 수 있다.
+
+```ts
+export type Mode = {
+  onBlur: "onBlur";
+  onChange: "onChange";
+  onSubmit: "onSubmit";
+  onTouched: "onTouched";
+  all: "all";
+};
+```
+
+onBlur는 인풋창에서 포커스가 들어갔다가 빠져나갈 때 validation을 실행한다.
+
+> mode를 바꾼 순간 폼이 validation을 할 때마다 리렌더링 된다.
+
+onTouched는 인풋에서 작동할 때 validation을 판단한다.  
+onChange는 모든 change 이벤트에 대해서 반응한다
+all은 onBlur와 onChange까지 합친 것이다.
+
+확실히 mode에 따라서 리렌더링이 많이 일어나는 것 같다.
+
+## trigger
+
+수동적으로 인풋 및 폼의 validation을 발생시킬 수 있다.
+
+```ts
+trigger(); //폼의 validation
+trigger("username"); //인풋의 validation
+```

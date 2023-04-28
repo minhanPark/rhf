@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { useForm, useFieldArray } from "react-hook-form";
+import { useForm, useFieldArray, FieldErrors } from "react-hook-form";
 import { DevTool } from "@hookform/devtools";
 
 let renderCount = 0;
@@ -32,7 +32,8 @@ export const YouTubeForm = () => {
       phNumbers: [{ number: "" }],
     },
   });
-  const { register, control, handleSubmit, formState, reset, watch } = form;
+  const { register, control, handleSubmit, formState, reset, watch, trigger } =
+    form;
   const { errors, isDirty } = formState;
 
   const { fields, append, remove } = useFieldArray({
@@ -41,6 +42,10 @@ export const YouTubeForm = () => {
   });
   const onSubmit = (data: FormValues) => {
     console.log("form submitted", data);
+  };
+
+  const onError = (errors: FieldErrors<FormValues>) => {
+    console.log("Form errors", errors);
   };
 
   // useEffect(() => {
@@ -66,7 +71,7 @@ export const YouTubeForm = () => {
   return (
     <div>
       <h1>Youtube form ({renderCount / 2})</h1>
-      <form onSubmit={handleSubmit(onSubmit)} noValidate>
+      <form onSubmit={handleSubmit(onSubmit, onError)} noValidate>
         <label htmlFor="username">Username</label>
         <input
           type="text"
@@ -115,7 +120,14 @@ export const YouTubeForm = () => {
         <p className="error">{errors.channel?.message}</p>
 
         <label htmlFor="twitter">Twitter</label>
-        <input type="text" id="twitter" {...register("social.twitter")} />
+        <input
+          type="text"
+          id="twitter"
+          {...register("social.twitter", {
+            required: "Enter",
+            disabled: watch("channel") === "",
+          })}
+        />
         <label htmlFor="facebook">Facebook</label>
         <input type="text" id="facebook" {...register("social.facebook")} />
 
